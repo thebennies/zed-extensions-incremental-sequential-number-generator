@@ -2,9 +2,12 @@
 //!
 //! Example (from the PRD): `a:1` -> `a`, `b`, `c`, `d`.
 //!
-//! Letters are treated as base-26 digits (A=0..Z=25) so sequences roll over
-//! naturally past `z` (`y:1` -> `y`, `z`, `aa`, `ab`, ...), mirroring how
-//! spreadsheet column names extend past `Z`.
+//! Letters are treated as base-26 digits (a=0..z=25). Incrementing past `z`
+//! rolls over into a second letter using the same "bijective base-26"
+//! scheme as spreadsheet column names: `y:1` -> `y`, `z`, `aa`, `ab`, ...
+//! Decrementing past `a` has no natural bijective-base-26 negative form, so
+//! it instead wraps modulo 26 back into a single letter: `a:-1` -> `a`,
+//! `z`, `y`, `x`, ...
 
 use crate::error::SequenceError;
 use crate::generator::Generator;
@@ -45,16 +48,19 @@ impl AlphaGenerator {
 
 /// Converts a non-negative base-26 offset into a letter string, using the
 /// same "bijective base-26" scheme as spreadsheet column names: 0=a,
-/// 25=z, 26=aa, 27=ab, ...
-fn offset_to_letters(mut offset: i64, uppercase: bool) -> String {
+/// 25=z, 26=aa, 27=ab, ... Unlike plain base-26, there is no digit that
+/// means "zero" in a non-leading position, which is what lets `z` roll over
+/// into `aa` instead of `a0`.
+fn offset_to_letters(offset: u64, uppercase: bool) -> String {
+    // 1-based bijective numeration: repeatedly take ((n - 1) mod 26) as the
+    // next (least-significant) letter, then move to the next "digit" via
+    // (n - 1) / 26. This is the standard Excel-column-name algorithm.
+    let mut n = offset + 1;
     let mut letters = Vec::new();
-    loop {
-        let remainder = (offset % 26) as u8;
+    while n > 0 {
+        let remainder = ((n - 1) % 26) as u8;
         letters.push(remainder);
-        offset = offset / 26 - 1;
-        if offset < 0 {
-            break;
-        }
+        n = (n - 1) / 26;
     }
     letters.reverse();
     letters
@@ -68,12 +74,23 @@ fn offset_to_letters(mut offset: i64, uppercase: bool) -> String {
 
 impl Generator for AlphaGenerator {
     fn value_at(&self, index: usize) -> String {
-        let raw_offset = self.start + self.step * index as i64;
-        // Negative offsets (e.g. decrementing past 'a') wrap using
-        // Euclidean modulo so the sequence stays within a-z rather than
-        // producing invalid characters.
-        let wrapped = raw_offset.rem_euclid(26);
-        offset_to_letters(wrapped, self.uppercase)
+        // Saturate instead of panicking on overflow for pathological
+        // start/step/index combinations (e.g. huge cursor counts with a
+        // huge step) - matches the PRD's "never crash the host" edge case.
+        let raw_offset = self
+            .start
+            .saturating_add(self.step.saturating_mul(index as i64));
+        let offset = if raw_offset >= 0 {
+            // Positive offsets are used as-is so incrementing past 'z'
+            // rolls over into 'aa', 'ab', ... (see module docs).
+            raw_offset as u64
+        } else {
+            // Negative offsets (decrementing past 'a') have no natural
+            // bijective-base-26 representation, so wrap modulo 26 into a
+            // single trailing letter instead.
+            raw_offset.rem_euclid(26) as u64
+        };
+        offset_to_letters(offset, self.uppercase)
     }
 }
 
@@ -103,10 +120,24 @@ mod tests {
     }
 
     #[test]
-    fn rolls_over_past_z() {
+    fn rolls_over_past_z_into_double_letters() {
         let gen = AlphaGenerator::new("y", Some("1")).unwrap();
         let values: Vec<String> = (0..4).map(|i| gen.value_at(i)).collect();
-        assert_eq!(values, vec!["y", "z", "a", "b"]);
+        assert_eq!(values, vec!["y", "z", "aa", "ab"]);
+    }
+
+    #[test]
+    fn decrementing_past_a_wraps_to_single_letter() {
+        let gen = AlphaGenerator::new("a", Some("-1")).unwrap();
+        let values: Vec<String> = (0..4).map(|i| gen.value_at(i)).collect();
+        assert_eq!(values, vec!["a", "z", "y", "x"]);
+    }
+
+    #[test]
+    fn huge_step_and_index_never_panics() {
+        let gen = AlphaGenerator::new("a", Some("9223372036854775807")).unwrap();
+        // Must not overflow-panic; exact letters don't matter, just that it returns.
+        let _ = gen.value_at(usize::MAX / 2);
     }
 
     #[test]
