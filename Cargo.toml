@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sequence-core",
+    "crates/sequence-extension",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/thebennies/zed-extensions-incremental-sequential-number-generator"
