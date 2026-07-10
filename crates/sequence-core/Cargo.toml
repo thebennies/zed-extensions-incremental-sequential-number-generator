@@ -1,0 +1,14 @@
+[package]
+name = "sequence-core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Pure-Rust sequence generation engine: numeric, alphabetical, date, and word-list sequences for multi-cursor insertion."
+
+[dependencies]
+# `clock` feature intentionally omitted: it pulls in system-time access via
+# wasm-bindgen which is unavailable in Zed's sandboxed Wasm host. We only ever
+# parse/construct NaiveDate values supplied by the user, never `Local::now()`.
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
