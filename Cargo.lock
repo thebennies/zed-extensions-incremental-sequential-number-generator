@@ -450,14 +450,14 @@ dependencies = [
 
 [[package]]
 name = "sequence-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
 ]
 
 [[package]]
 name = "sequence-extension"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sequence-core",
  "zed_extension_api",
