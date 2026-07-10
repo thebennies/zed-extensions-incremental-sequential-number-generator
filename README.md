@@ -1,9 +1,13 @@
 # Incremental & Sequential Number Generator
 
-**Extend the power of multiple cursors in the [Zed](https://zed.dev) editor.**
-Instantly insert sequential numbers, incremental counters, date ranges,
-alphabetical lists, and custom word sequences across multiple selections.
-Boost your coding speed with fast, customizable sequence insertion.
+**A companion for multiple cursors in the [Zed](https://zed.dev) editor.**
+Generate sequential numbers, incremental counters, date ranges, alphabetical
+lists, and custom word sequences on demand via the `/sequence` slash command
+- one value per line, ready to paste across your multiple cursors/selections.
+(See ["Important note on scope"](#important-note-on-scope-how-this-maps-to-zeds-real-extension-api)
+below: today this generates a pasteable text block rather than typing directly
+into N cursors, because Zed's extension API doesn't expose buffer editing to
+extensions yet.)
 
 ## Features
 

@@ -1,7 +1,7 @@
 id = "incremental-sequential-number-generator"
 name = "Incremental & Sequential Number Generator"
-description = "Instantly insert sequential numbers, incremental counters, date ranges, alphabetical lists, and custom word sequences across multiple selections. Boost your coding speed with fast, customizable sequence insertion."
-version = "0.1.0"
+description = "Generate sequential numbers, incremental counters, date ranges, alphabetical lists, and custom word sequences on demand via the /sequence slash command - one value per line, ready to paste across multiple cursors/selections."
+version = "0.2.0"
 schema_version = 1
 authors = ["thebennies"]
 repository = "https://github.com/thebennies/zed-extensions-incremental-sequential-number-generator"
