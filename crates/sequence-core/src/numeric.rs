@@ -36,6 +36,17 @@ impl PadFormat {
         let width: usize = digits
             .parse()
             .map_err(|_| SequenceError::InvalidSyntax(format!("invalid format width: {raw}")))?;
+        // Cap the padding width: an adversarial format like "%999999999999d"
+        // would otherwise ask `format!` to allocate a multi-gigabyte string
+        // per cursor, which for 10,000+ cursors is a real memory-exhaustion
+        // risk against the extension host. 256 is far beyond any legitimate
+        // use case (the PRD's examples use widths of 2-3).
+        const MAX_WIDTH: usize = 256;
+        if width > MAX_WIDTH {
+            return Err(SequenceError::InvalidSyntax(format!(
+                "format width too large (max {MAX_WIDTH}): {raw}"
+            )));
+        }
         Ok(PadFormat { width })
     }
 
@@ -123,13 +134,18 @@ impl Generator for NumericGenerator {
                     Number::Float(v) => v,
                 };
                 let value = start + step * index as f64;
-                // Trim trailing zeros for a clean float display (e.g. 1.5, not 1.500000).
-                let mut text = format!("{value}");
-                if !text.contains('.') && !text.contains('e') {
-                    // keep integral floats bare, matches user expectation
-                }
-                if text.ends_with(".0") {
-                    text.truncate(text.len() - 2);
+                // Round to 10 decimal places before display to absorb binary
+                // floating-point noise (e.g. 0.1 + 0.1*2 == 0.30000000000000004
+                // in raw f64 arithmetic), then trim trailing zeros/dot for a
+                // clean display (1.5, not 1.5000000000; 1, not 1.0000000000).
+                let mut text = format!("{value:.10}");
+                if text.contains('.') {
+                    while text.ends_with('0') {
+                        text.pop();
+                    }
+                    if text.ends_with('.') {
+                        text.pop();
+                    }
                 }
                 text
             }
@@ -191,6 +207,15 @@ mod tests {
         let gen = NumericGenerator::new(Some("0.5"), Some("0.5"), None).unwrap();
         let values: Vec<String> = (0..3).map(|i| gen.value_at(i)).collect();
         assert_eq!(values, vec!["0.5", "1", "1.5"]);
+    }
+
+    #[test]
+    fn float_sequence_absorbs_binary_rounding_noise() {
+        // Raw f64 arithmetic gives 0.1 + 0.1*2 == 0.30000000000000004; the
+        // generator must display a clean "0.3" instead.
+        let gen = NumericGenerator::new(Some("0.1"), Some("0.1"), None).unwrap();
+        let values: Vec<String> = (0..3).map(|i| gen.value_at(i)).collect();
+        assert_eq!(values, vec!["0.1", "0.2", "0.3"]);
     }
 
     #[test]
