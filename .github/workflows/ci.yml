@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Test sequence-core & sequence-extension (native)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo test (workspace, native target)
+        run: cargo test --workspace --all-features
+
+  build-wasm:
+    name: Build extension for wasm32-wasip1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip1
+      - name: cargo build --target wasm32-wasip1 (release)
+        run: cargo build --target wasm32-wasip1 -p sequence-extension --release
