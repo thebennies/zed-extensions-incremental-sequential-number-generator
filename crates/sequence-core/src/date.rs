@@ -108,11 +108,25 @@ fn parse_step_spec(raw: &str) -> Result<(i64, Unit), SequenceError> {
 /// Adds `step * multiplier` months to `date`, clamping the day-of-month to
 /// the target month's length (e.g. Jan 31 + 1 month -> Feb 28/29, never an
 /// invalid date).
+///
+/// Never panics: all intermediate arithmetic uses `i128` so it cannot
+/// overflow, and a target year outside `NaiveDate`'s representable range
+/// clamps to [`NaiveDate::MIN`]/[`NaiveDate::MAX`] instead of panicking
+/// (matches the PRD's "never crash the host" requirement for adversarial
+/// input like `date(2026-01-01):999999999999999m`).
 fn add_months(date: NaiveDate, months: i64) -> NaiveDate {
-    let total_months = date.year() as i64 * 12 + (date.month() as i64 - 1) + months;
-    let year = total_months.div_euclid(12) as i32;
+    // i128 cannot overflow for any i32 year combined with any i64 month
+    // delta, so this arithmetic is panic-free regardless of input.
+    let total_months: i128 = date.year() as i128 * 12 + (date.month() as i128 - 1) + months as i128;
+    let year_i128 = total_months.div_euclid(12);
     let month0 = total_months.rem_euclid(12) as u32; // 0-based
     let month = month0 + 1;
+
+    let year = match i32::try_from(year_i128) {
+        Ok(year) => year,
+        Err(_) => return if year_i128 > 0 { NaiveDate::MAX } else { NaiveDate::MIN },
+    };
+
     let day = date.day();
     // Walk the day down until we land on a valid date for the target month.
     for candidate_day in (1..=day).rev() {
@@ -120,18 +134,34 @@ fn add_months(date: NaiveDate, months: i64) -> NaiveDate {
             return d;
         }
     }
-    // Unreachable in practice: every (year, month) has at least a 1st.
-    NaiveDate::from_ymd_opt(year, month, 1).expect("month always has a 1st day")
+    // Unreachable in practice (every year/month has a 1st), but fall back to
+    // a clamp rather than `.expect(..)` so this can truly never panic.
+    NaiveDate::from_ymd_opt(year, month, 1).unwrap_or(NaiveDate::MAX)
+}
+
+/// Adds `days` days to `date` without panicking, even for adversarial
+/// `days` values that would overflow `chrono::TimeDelta` construction or
+/// push the result outside `NaiveDate`'s representable range. Clamps to
+/// [`NaiveDate::MIN`]/[`NaiveDate::MAX`] on overflow instead.
+fn add_days_checked(date: NaiveDate, days: i64) -> NaiveDate {
+    let clamp = || if days >= 0 { NaiveDate::MAX } else { NaiveDate::MIN };
+    match chrono::TimeDelta::try_days(days) {
+        Some(delta) => date.checked_add_signed(delta).unwrap_or_else(clamp),
+        None => clamp(),
+    }
 }
 
 impl Generator for DateGenerator {
     fn value_at(&self, index: usize) -> String {
-        let n = self.step * index as i64;
+        // Saturate instead of panicking on overflow for pathological
+        // step/index combinations (e.g. a 10,000+ cursor date sequence with
+        // a huge step).
+        let n = self.step.saturating_mul(index as i64);
         let date = match self.unit {
-            Unit::Days => self.start + chrono::Duration::days(n),
-            Unit::Weeks => self.start + chrono::Duration::weeks(n),
+            Unit::Days => add_days_checked(self.start, n),
+            Unit::Weeks => add_days_checked(self.start, n.saturating_mul(7)),
             Unit::Months => add_months(self.start, n),
-            Unit::Years => add_months(self.start, n * 12),
+            Unit::Years => add_months(self.start, n.saturating_mul(12)),
         };
         match self.precision {
             Precision::Day => date.format("%Y-%m-%d").to_string(),
@@ -182,5 +212,20 @@ mod tests {
     #[test]
     fn rejects_unknown_unit() {
         assert!(DateGenerator::new("2026-01-01", "1x").is_err());
+    }
+
+    #[test]
+    fn adversarial_huge_step_never_panics() {
+        // Regression test: this used to panic inside chrono's Add impl /
+        // i64 arithmetic overflow. Must now clamp instead of crashing the
+        // extension host, per the PRD's edge-case handling.
+        let days = DateGenerator::new("2026-01-01", "999999999999999999d").unwrap();
+        assert_eq!(days.value_at(2), NaiveDate::MAX.format("%Y-%m-%d").to_string());
+
+        let months = DateGenerator::new("2026-01-01", "999999999999999999m").unwrap();
+        assert_eq!(months.value_at(2), NaiveDate::MAX.format("%Y-%m-%d").to_string());
+
+        let years = DateGenerator::new("2026-01-01", "-999999999999999999y").unwrap();
+        assert_eq!(years.value_at(2), NaiveDate::MIN.format("%Y-%m-%d").to_string());
     }
 }
