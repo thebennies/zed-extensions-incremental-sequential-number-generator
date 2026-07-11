@@ -1,0 +1,56 @@
+// Zed doesn't support arbitrary free-text prompts in tasks.json (no
+// VS Code-style ${input:...}). The supported workflow for a templated task
+// like this is: open the task modal (`task: spawn`), select this task,
+// press `tab` to load its command into an editable prompt, change the
+// spec/count to whatever you need, then run it.
+//
+// See the README's "Usage" section for the full spec syntax reference.
+//
+// `-p sequence-cli` is required: the workspace root's Cargo.toml restricts
+// `default-members` to just the extension package (so Zed's own extension
+// build never touches this CLI crate), so a plain `cargo run --bin
+// sequence` can't find it without explicitly naming the package.
+[
+  {
+    "label": "Sequence: generate (edit spec/count before running)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--quiet",
+      "--manifest-path",
+      "$ZED_WORKTREE_ROOT/Cargo.toml",
+      "-p",
+      "sequence-cli",
+      "--bin",
+      "sequence",
+      "--",
+      "1:2:%02d",
+      "4"
+    ],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": true,
+    "reveal": "always",
+    "hide": "never"
+  },
+  {
+    "label": "Sequence: generate from selected text as spec (count 4)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--quiet",
+      "--manifest-path",
+      "$ZED_WORKTREE_ROOT/Cargo.toml",
+      "-p",
+      "sequence-cli",
+      "--bin",
+      "sequence",
+      "--",
+      "${ZED_SELECTED_TEXT:1:2:%02d}",
+      "4"
+    ],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": true,
+    "reveal": "always",
+    "hide": "never"
+  }
+]
