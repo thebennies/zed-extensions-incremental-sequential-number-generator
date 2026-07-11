@@ -4,7 +4,7 @@ description = "Generate sequential numbers, incremental counters, date ranges, a
 version = "0.2.0"
 schema_version = 1
 authors = ["thebennies"]
-repository = "https://github.com/thebennies/zed-extensions-incremental-sequential-number-generator"
+repository = "https://github.com/thebennies/zed-extension-incremental-sequential-number-generator-ARCHIVED"
 
 [slash_commands.sequence]
 description = "Generate a numeric, alphabetical, date, or word-list sequence: /sequence <spec> <count>"

@@ -13,7 +13,7 @@ version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Zed extension exposing sequence-core's numeric/alpha/date/word-list generators as a slash command."
-repository = "https://github.com/thebennies/zed-extensions-incremental-sequential-number-generator"
+repository = "https://github.com/thebennies/zed-extension-incremental-sequential-number-generator-ARCHIVED"
 
 [lib]
 crate-type = ["cdylib"]

@@ -12,7 +12,7 @@ The project was designed as a [Zed](https://zed.dev) editor extension that would
 
 ---
 
-# Incremental & Sequential Number Generator
+# Incremental & Sequential Number Generator (ARCHIVED)
 
 **A companion for multiple cursors in the [Zed](https://zed.dev) editor.**
 Generate sequential numbers, incremental counters, date ranges, alphabetical
