@@ -449,6 +449,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sequence-cli"
+version = "0.2.0"
+dependencies = [
+ "sequence-core",
+]
+
+[[package]]
 name = "sequence-core"
 version = "0.2.0"
 dependencies = [

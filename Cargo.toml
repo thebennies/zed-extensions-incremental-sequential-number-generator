@@ -26,5 +26,15 @@ zed_extension_api = "0.7.0"
 # implicit) keeps `cargo test --workspace` / `cargo test -p sequence-core`
 # working exactly as before the restructure, and avoids Cargo ever getting
 # confused about which manifest is the workspace root.
+#
+# `default-members` is deliberately just "." (this extension package): Zed's
+# builder runs plain `cargo build --target wasm32-wasip2` with no `-p` flag,
+# which builds `default-members` for that target. Restricting it to "."
+# means Zed only ever compiles the extension crate (and its dependency
+# sequence-core, pulled in because it's linked) - `sequence-cli` is a
+# workspace member for `cargo test --workspace` / `cargo build -p
+# sequence-cli` convenience, but is never touched by Zed's install/compile
+# flow.
 [workspace]
-members = ["crates/sequence-core"]
+members = ["crates/sequence-core", "crates/sequence-cli"]
+default-members = ["."]

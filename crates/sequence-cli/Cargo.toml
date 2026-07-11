@@ -1,0 +1,13 @@
+[package]
+name = "sequence-cli"
+version = "0.2.0"
+edition = "2021"
+license = "MIT"
+description = "Standalone CLI for sequence-core: generate numeric/alpha/date/word-list sequences from a terminal or Zed Task, independent of any Zed AI-panel integration."
+
+[[bin]]
+name = "sequence"
+path = "src/main.rs"
+
+[dependencies]
+sequence-core = { path = "../sequence-core" }
