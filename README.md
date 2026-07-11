@@ -1,3 +1,17 @@
+# ⚠️ ARCHIVED — Incremental & Sequential Number Generator
+
+This repository is **archived** and no longer actively maintained.
+
+## Why it is archived
+
+The project was designed as a [Zed](https://zed.dev) editor extension that would read the active editor's multi-line cursor positions and insert one generated value per cursor. Zed's extension API does not expose multi-line cursor access or multi-cursor buffer edits to third-party extensions — the `Extension` trait in `zed_extension_api` 0.7.0 has no such methods, and extensions run inside a WebAssembly sandbox ([docs.rs: `Extension` trait, v0.7.0](https://docs.rs/zed_extension_api/0.7.0/zed_extension_api/trait.Extension.html)). Because of that, the project fell back to a `/sequence` **slash-command workaround**. The slash command works technically, but it is not an intuitive workflow for this use case, and — as of API v0.7.0 — it has no reachable UI surface in Zed either: the official "Developing Extensions" docs no longer list slash commands as a supported extension capability ([Zed Docs: Developing Extensions](https://zed.dev/docs/extensions/developing-extensions)), and user reports confirm extension-provided slash commands are "no longer usable from any part of the zed ui" after text threads were removed ([zed-industries/zed#53760](https://github.com/zed-industries/zed/issues/53760)). With neither a proper multi-line cursor API nor a usable workaround, the Zed-extension part of this project cannot function as originally intended.
+
+---
+
+*Everything below this line is the original README, kept for historical reference. It describes the working CLI/Task workflow and the (now unreachable) slash-command extension.*
+
+---
+
 # Incremental & Sequential Number Generator
 
 **A companion for multiple cursors in the [Zed](https://zed.dev) editor.**
