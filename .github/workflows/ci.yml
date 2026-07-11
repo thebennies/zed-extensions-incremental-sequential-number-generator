@@ -16,12 +16,19 @@ jobs:
         run: cargo test --workspace --all-features
 
   build-wasm:
-    name: Build extension for wasm32-wasip1
+    name: Build extension for wasm32-wasip2 (Zed's actual extension target)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-wasip1
-      - name: cargo build --target wasm32-wasip1 (release)
-        run: cargo build --target wasm32-wasip1 -p sequence-extension --release
+          targets: wasm32-wasip2
+      # Mirrors exactly what Zed's extension_builder.rs runs when you
+      # "Install Dev Extension": `cargo build --target wasm32-wasip2
+      # --target-dir <extension_dir>/target` from the extension root, with
+      # no `-p` flag (relying on the root Cargo.toml being the extension's
+      # own [package], not just a workspace manifest).
+      - name: cargo build --target wasm32-wasip2 (release)
+        run: cargo build --target wasm32-wasip2 --target-dir ./target --release
+      - name: verify expected wasm artifact exists
+        run: test -f target/wasm32-wasip2/release/sequence_extension.wasm

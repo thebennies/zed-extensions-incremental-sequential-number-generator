@@ -1,11 +1,30 @@
-[workspace]
-resolver = "2"
-members = [
-    "crates/sequence-core",
-    "crates/sequence-extension",
-]
-
-[workspace.package]
+### This manifest is BOTH the Zed extension's package manifest *and* a
+### workspace root. Zed's extension builder (see `extension_builder.rs` in
+### zed-industries/zed) reads `<extension_dir>/Cargo.toml` directly and
+### requires a top-level `[package]` table with `package.name` - a
+### workspace-only manifest (no `[package]`) fails to parse there and the
+### install errors out with "failed to compile Rust extension". So this
+### crate - the thin Zed slash-command wrapper - MUST live at the repo
+### root; `sequence-core` (the actual generation engine) stays a separate,
+### independently-testable crate referenced by path.
+[package]
+name = "sequence-extension"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
+description = "Zed extension exposing sequence-core's numeric/alpha/date/word-list generators as a slash command."
 repository = "https://github.com/thebennies/zed-extensions-incremental-sequential-number-generator"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sequence-core = { path = "crates/sequence-core" }
+zed_extension_api = "0.7.0"
+
+# Declaring this package as its own workspace root (rather than leaving it
+# implicit) keeps `cargo test --workspace` / `cargo test -p sequence-core`
+# working exactly as before the restructure, and avoids Cargo ever getting
+# confused about which manifest is the workspace root.
+[workspace]
+members = ["crates/sequence-core"]
