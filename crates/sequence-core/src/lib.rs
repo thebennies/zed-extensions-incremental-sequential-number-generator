@@ -18,6 +18,7 @@
 //! ...` sequence, matching the PRD's edge-case handling requirement.
 
 mod alpha;
+mod args;
 mod date;
 mod error;
 mod generator;
@@ -26,6 +27,7 @@ mod parser;
 mod wordlist;
 
 pub use alpha::AlphaGenerator;
+pub use args::parse_spec_and_count;
 pub use date::DateGenerator;
 pub use error::SequenceError;
 pub use generator::{generate_n, Generator};
